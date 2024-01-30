@@ -44,7 +44,7 @@ const CardGame = observer(function CardGame()  {
         })
         .then((data) => {
             if (data.cards[0]) {
-                console.log(data.cards[0])
+                console.log(data)
                 return setCard(data.cards[0])
             }
         });
