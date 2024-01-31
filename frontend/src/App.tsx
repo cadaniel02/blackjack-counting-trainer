@@ -1,17 +1,24 @@
-import React from 'react';
-import './App.css';
-import { observer } from 'mobx-react';
-import SimpleApiComponent from './test';
-import CardGame from './components/DrawCardPage';
+import "./App.css";
+import React, { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
+import { observer } from "mobx-react";
+import SimpleApiComponent from "./test";
+import CardGame from "./components/DrawCardPage";
+
+import { render } from "react-dom";
+
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 const App = observer(function App() {
+  const [playerId, setPlayerId] = useState(null);
+
   return (
     <div className="App">
       <header className="App-header">
-        <CardGame /> 
+        <CardGame />
       </header>
     </div>
   );
-})
+});
 
 export default App;

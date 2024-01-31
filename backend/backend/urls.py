@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),  # Include the myapi urls
     path('game/', include('game.urls')),
+    path('player/', include('player.urls')),
 ]
