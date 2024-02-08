@@ -10,8 +10,6 @@ import { render } from "react-dom";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 const App = observer(function App() {
-  const [playerId, setPlayerId] = useState(null);
-
   return (
     <div className="App">
       <header className="App-header">

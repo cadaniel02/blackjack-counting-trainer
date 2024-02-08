@@ -44,6 +44,6 @@ def get_game_or_error_response(game_id):
 def draw_cards(deck_id, card_count=1):
     draw_response = requests.get(f'https://deckofcardsapi.com/api/deck/{deck_id}/draw/?count={card_count}')
     if draw_response.status_code == 200:
-        return None
+        return draw_response
     else:
         return 'Failed to draw cards'

@@ -9,13 +9,12 @@ export interface Card {
     suit: string;
 }
 
-export interface DeckOfCardsApiResponse {
-    success: boolean;
+export interface Hand {
     cards: Card[];
-    deck_id: string;
-    remaining: number;
+    value?: number; 
+    is_active?: boolean;  
   }
-
+  
 export interface FetchOptions extends RequestInit {}
 
 export interface GameData {
@@ -24,6 +23,8 @@ export interface GameData {
   
 export interface PlayerData {
     userID: string;
+    balance: number;
+    hand: Card[];
 }
   
 export type SuccessCallback<T> = (data: T) => void;

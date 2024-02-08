@@ -1,14 +1,22 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { observer } from "mobx-react";
+
 import {
   Card,
+  Hand,
   FetchOptions,
   SuccessCallback,
   ErrorCallback,
   GameData,
   PlayerData,
+} from "../interfaces/types";
+
+import {
+  DealCardsResponse,
   DeckOfCardsApiResponse,
-} from "./types";
+} from "../interfaces/apiResponses";
+
+import "../static/css/Hands.css";
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
@@ -18,6 +26,9 @@ const CardGame = observer(function CardGame() {
   const [playerId, setPlayerId] = useState<string | null>("");
   const [error, setError] = useState<string | null>("");
   const [isLoading, setLoading] = useState(false);
+
+  const [dealerHand, setDealerHand] = useState<Hand | null>(null);
+  const [playerHands, setPlayerHands] = useState<Hand[] | null>(null);
 
   async function fetchData<
     T
@@ -103,7 +114,7 @@ const CardGame = observer(function CardGame() {
 
   useEffect(() => {
     if (gameId) {
-      console.log(gameId)
+      console.log(gameId);
       fetchData<GameData>(
         `${BASE_URL}/player/join/${gameId}/`,
         {
@@ -172,22 +183,110 @@ const CardGame = observer(function CardGame() {
     });
   };
 
+  const dealCards = () => {
+    setLoading(true);
+    setError("");
+    fetchData<DealCardsResponse>(
+      `${BASE_URL}/game/deal/${gameId}/`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      },
+      (data) => {
+        // onSuccess callback logic
+        if (data.dealer_hand && data.dealer_hand.cards.length > 0) {
+          setDealerHand(data.dealer_hand);
+        } else {
+          throw new Error("No dealer hand returned");
+        }
+        if (data.player_hands && data.player_hands.length > 0) {
+          setPlayerHands(data.player_hands);
+        } else {
+          throw new Error("No player hand returned");
+        }
+        // Handle successful deck shuffle here, if there's any specific logic needed
+      },
+      (errorMessage) => {
+        // onError callback logic
+        console.error(errorMessage);
+        setError(errorMessage);
+      }
+    ).finally(() => {
+      setLoading(false);
+    });
+  };
+
+  const addHand = () => {
+    setLoading(true);
+    setError("");
+
+    fetchData<void>(
+      `${BASE_URL}/game/add_hand/${gameId}/`, // Update URL as needed based on your API endpoint
+      {
+        method: "POST", // Assuming adding a hand is a POST request; update as needed
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      },
+      (_) => {},
+      (errorMessage) => {
+        // onError callback logic
+        console.error(errorMessage);
+        setError(errorMessage);
+      }
+    ).finally(() => {
+      setLoading(false);
+    });
+  };
+
   return (
     <div>
-      <button onClick={shuffleDeck} disabled={isLoading}>
-        Shuffle/Create Deck
+      <button onClick={addHand} disabled={!gameId || isLoading}>
+        Add Hand
       </button>
-      <button onClick={drawCard} disabled={!gameId || isLoading}>
-        Draw Card
+      <button onClick={dealCards} disabled={!gameId || isLoading}>
+        Deal Cards
       </button>
-      {card && (
+      <button onClick={shuffleDeck} disabled={!gameId || isLoading}>
+        Shuffle Cards
+      </button>
+      <div>
+        {/* Parent container for all hands */}
         <div>
-          <img src={card.image} alt={card.code} />
+          <h2>Dealer's Hand</h2>
+          <div className="hand">
+            {dealerHand &&
+              dealerHand.cards.map((card, index) => (
+                <img
+                  key={index}
+                  src={card.image}
+                  alt={card.code}
+                  className="card"
+                />
+              ))}
+          </div>
         </div>
-      )}
+      </div>
+      <div className="handsContainer">
+        {playerHands &&
+          playerHands.map((hand, handIndex) => (
+            <div key={handIndex}>
+              <h3>Player {handIndex + 1}'s Hand</h3>
+              <div className="hand">
+                {hand.cards.map((card, cardIndex) => (
+                  <img
+                    key={cardIndex}
+                    src={card.image}
+                    alt={card.code}
+                    className="card"
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+      </div>
       {error && <div className="error">{error}</div>}
     </div>
   );
 });
-
 export default CardGame;

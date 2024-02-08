@@ -61,7 +61,7 @@ class JoinGame(APIView):
 
         if not self.request.session.exists(self.request.session.session_key):
             self.request.session.create()
-            
+        
         print(self.request.session.session_key)
 
         if game_id is None:
@@ -80,4 +80,4 @@ class JoinGame(APIView):
         # If data is invalid, return an error response.
         else:
             print(serializer.errors)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
