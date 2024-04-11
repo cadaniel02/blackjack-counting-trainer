@@ -6,7 +6,7 @@ from django.db.models import CheckConstraint, Q
 class Hand(models.Model):
     cards = models.JSONField(default=list)  # Storing cards as JSON. Example: [{"rank": "A", "suit": "hearts"}, ...]
     value = models.IntegerField(default=0)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     game = models.ForeignKey('Game', related_name='hands', on_delete=models.CASCADE, null=True, blank=True)
     is_dealer_hand = models.BooleanField(default=False)  # New field to distinguish dealer's hand
 

@@ -4,9 +4,6 @@ import { observer } from "mobx-react";
 import {
   Card,
   Hand,
-  FetchOptions,
-  SuccessCallback,
-  ErrorCallback,
   GameData,
   PlayerData,
 } from "../interfaces/types";
@@ -18,38 +15,21 @@ import {
 
 import "../static/css/Hands.css";
 
+import { fetchData } from "../utils/apiUtils";
+
+import { shuffleDeck, drawCard } from "../utils/deckUtils";
+import { dealCards, addHand, hitHand, standHand } from "../utils/gameUtils";
+
 const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
 const CardGame = observer(function CardGame() {
-  const [card, setCard] = useState<Card | null>(null);
   const [gameId, setGameId] = useState<string | null>("");
   const [playerId, setPlayerId] = useState<string | null>("");
   const [error, setError] = useState<string | null>("");
   const [isLoading, setLoading] = useState(false);
 
   const [dealerHand, setDealerHand] = useState<Hand | null>(null);
-  const [playerHands, setPlayerHands] = useState<Hand[] | null>(null);
-
-  async function fetchData<
-    T
-  >(url: string, options: FetchOptions, onSuccess: SuccessCallback<T>, onError: ErrorCallback): Promise<void> {
-    try {
-      const response = await fetch(url, options);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch from ${url}`);
-      }
-      const data = (await response.json()) as T;
-      onSuccess(data);
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error(error.message);
-        onError(error.message);
-      } else {
-        console.error("An unknown error occurred");
-        onError("An unknown error occurred");
-      }
-    }
-  }
+  const [playerHands, setPlayerHands] = useState<Hand[]>([]);
 
   useEffect(() => {
     if (!playerId) {
@@ -64,14 +44,15 @@ const CardGame = observer(function CardGame() {
           console.log(data);
           setPlayerId(data.userID);
         },
-        setError
+        (errorMessage) => {
+          setError(errorMessage);
+        }
       );
     }
   }, [playerId]);
 
   useEffect(() => {
     if (!playerId) return;
-
     const createGame = () => {
       fetchData<GameData>(
         `${BASE_URL}/game/create/`,
@@ -106,7 +87,7 @@ const CardGame = observer(function CardGame() {
       },
       (errorMessage) => {
         setError(errorMessage);
-        // If error in fetching game, possibly create a new game
+        // If error in fetching game, create a new game
         createGame();
       }
     );
@@ -123,131 +104,47 @@ const CardGame = observer(function CardGame() {
           credentials: "include",
         },
         () => {},
-        setError
+        (errorMessage) => {
+          setError(errorMessage);
+        }
       );
     }
   }, [gameId]);
 
-  const shuffleDeck = () => {
-    setLoading(true);
-    setError("");
+  function isHandDisabled(index : number) {
+    return !gameId || isLoading || !playerHands[index].is_active || playerHands[index].cards.length === 0
+  }
 
-    fetchData<void>(
-      `${BASE_URL}/game/shuffle/${gameId}/`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      },
-      () => {
-        // onSuccess callback logic
-        console.log("Deck shuffled successfully");
-        // Handle successful deck shuffle here, if there's any specific logic needed
-      },
-      (errorMessage) => {
-        // onError callback logic
-        console.error(errorMessage);
-        setError(errorMessage);
-      }
-    ).finally(() => {
-      setLoading(false);
-    });
+  const shuffle = () => {
+    shuffleDeck(gameId, setLoading, setError)
   };
 
-  const drawCard = () => {
-    setLoading(true);
-    setError("");
-    fetchData<DeckOfCardsApiResponse>(
-      `${BASE_URL}/game/draw/${gameId}/`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      },
-      (data) => {
-        // onSuccess callback logic
-        if (data.cards && data.cards.length > 0) {
-          setCard(data.cards[0]);
-        } else {
-          throw new Error("No cards returned");
-        }
-        // Handle successful deck shuffle here, if there's any specific logic needed
-      },
-      (errorMessage) => {
-        // onError callback logic
-        console.error(errorMessage);
-        setError(errorMessage);
-      }
-    ).finally(() => {
-      setLoading(false);
-    });
+  const deal = () => {
+    dealCards(gameId, setLoading, setDealerHand, setPlayerHands, setError)
   };
 
-  const dealCards = () => {
-    setLoading(true);
-    setError("");
-    fetchData<DealCardsResponse>(
-      `${BASE_URL}/game/deal/${gameId}/`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      },
-      (data) => {
-        // onSuccess callback logic
-        if (data.dealer_hand && data.dealer_hand.cards.length > 0) {
-          setDealerHand(data.dealer_hand);
-        } else {
-          throw new Error("No dealer hand returned");
-        }
-        if (data.player_hands && data.player_hands.length > 0) {
-          setPlayerHands(data.player_hands);
-        } else {
-          throw new Error("No player hand returned");
-        }
-        // Handle successful deck shuffle here, if there's any specific logic needed
-      },
-      (errorMessage) => {
-        // onError callback logic
-        console.error(errorMessage);
-        setError(errorMessage);
-      }
-    ).finally(() => {
-      setLoading(false);
-    });
+  const add = () => {
+    addHand(gameId, setLoading, setError)
   };
 
-  const addHand = () => {
-    setLoading(true);
-    setError("");
+  const hit = (index : number) => {
+    hitHand(gameId, playerHands, setLoading, setError, setPlayerHands, index)
+  }
 
-    fetchData<void>(
-      `${BASE_URL}/game/add_hand/${gameId}/`, // Update URL as needed based on your API endpoint
-      {
-        method: "POST", // Assuming adding a hand is a POST request; update as needed
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      },
-      (_) => {},
-      (errorMessage) => {
-        // onError callback logic
-        console.error(errorMessage);
-        setError(errorMessage);
-      }
-    ).finally(() => {
-      setLoading(false);
-    });
-  };
+  const stand = (index : number) => {
+    standHand(gameId, playerHands, setLoading, setError, setPlayerHands, index)
+  }
+
 
   return (
     <div>
-      <button onClick={addHand} disabled={!gameId || isLoading}>
+      <button onClick={add} disabled={!gameId || isLoading}>
         Add Hand
       </button>
-      <button onClick={dealCards} disabled={!gameId || isLoading}>
+      <button onClick={deal} disabled={!gameId || isLoading}>
         Deal Cards
       </button>
-      <button onClick={shuffleDeck} disabled={!gameId || isLoading}>
+      <button onClick={shuffle} disabled={!gameId || isLoading}>
         Shuffle Cards
       </button>
       <div>
@@ -282,6 +179,18 @@ const CardGame = observer(function CardGame() {
                   />
                 ))}
               </div>
+              <button onClick={() => hit(handIndex)} disabled={isHandDisabled(handIndex)}>
+                Hit
+              </button>
+              <button onClick={() => stand(handIndex)} disabled={isHandDisabled(handIndex)}>
+                Stand
+              </button>
+              <button onClick={() => hit(handIndex)} disabled={isHandDisabled(handIndex)}>
+                Split
+              </button>
+              <button onClick={() => hit(handIndex)} disabled={isHandDisabled(handIndex)}>
+                Double
+              </button>
             </div>
           ))}
       </div>
